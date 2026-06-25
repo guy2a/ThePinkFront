@@ -3,6 +3,7 @@ import { Character } from '../entities/character.js';
 import { Player } from '../entities/player.js';
 import { Product } from '../entities/product.js';
 import { JoystickMove } from '../systems/joystick-move.js';
+import { TRIVIA_QUESTIONS } from '../data/trivia-questions.js';
 
 const WORLD_CHARS_WIDE = 120;
 const PRODUCT_COUNT = 12;
@@ -569,9 +570,61 @@ export class Day2Scene extends Phaser.Scene {
       duration: 800,
       onComplete: () => {
         this.input.once('pointerdown', () => {
-          this.events.emit('complete');
+          this.runTriviaQuestion(1);
         });
       }
     });
+  }
+
+  runTriviaQuestion(index) {
+    const qData = TRIVIA_QUESTIONS[index];
+    
+    // Create a local overlay HUD for trivia message
+    const fontSize = Math.max(12, Math.round(this.scale.height * 0.025));
+    const triviaHud = this.add.text(10, 10, `Trivia Question ${index + 1}...`, {
+      fontFamily: 'monospace',
+      fontSize: `${fontSize}px`,
+      color: '#ffffff',
+      backgroundColor: '#000000aa',
+      padding: { x: 6, y: 4 },
+    }).setScrollFactor(0).setDepth(11000);
+
+    const onTriviaComplete = (event) => {
+      if (event.detail.questionIndex === index) {
+        window.removeEventListener('trivia-complete', onTriviaComplete);
+        this.events.off('shutdown', cleanupListener);
+        triviaHud.destroy();
+        
+        this.time.delayedCall(1000, () => {
+          this.events.emit('complete');
+        });
+      }
+    };
+
+    const cleanupListener = () => {
+      window.removeEventListener('trivia-complete', onTriviaComplete);
+      triviaHud.destroy();
+    };
+
+    window.addEventListener('trivia-complete', onTriviaComplete);
+    this.events.once('shutdown', cleanupListener);
+
+    let portraitBase64 = null;
+    try {
+      portraitBase64 = this.textures.getBase64('solberg_portrait');
+    } catch (err) {
+      console.warn('Could not extract solberg_portrait base64:', err);
+    }
+
+    window.dispatchEvent(new CustomEvent('show-trivia', {
+      detail: {
+        questionIndex: index,
+        questionText: qData[0],
+        options: qData[1],
+        correctIndex: qData[2],
+        portraitDataUrl: portraitBase64,
+        totalQuestions: 5
+      }
+    }));
   }
 }

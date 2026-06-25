@@ -111,7 +111,7 @@ export class MenuScene extends Phaser.Scene {
       // Play transition effect (fade out camera)
       this.cameras.main.fade(500, 26, 26, 46);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.scene.start('Day1Scene');
+        this.events.emit('complete');
       });
     });
 

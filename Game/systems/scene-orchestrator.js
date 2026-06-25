@@ -125,21 +125,12 @@ export class SceneOrchestrator {
   }
 
   /**
-   * Resets the game state and returns back to the HTML main menu overlay.
+   * Resets the game state and starts the BootScene to return to the MenuScene.
    */
   resetToMainMenu() {
     window.gameStarted = false;
 
-    // Display the HTML welcome/menu screen again with smooth transition
-    const menu = document.getElementById('html-menu');
-    if (menu) {
-      menu.style.display = 'flex';
-      // Force reflow
-      menu.offsetHeight;
-      menu.style.opacity = '1';
-    }
-
-    // Load BootScene back so it's ready to handle start-game event again
+    // Load BootScene back so it's ready to boot again
     this.game.scene.start('BootScene');
   }
 }

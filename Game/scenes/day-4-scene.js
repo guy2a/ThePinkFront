@@ -1,4 +1,5 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
+import { TRIVIA_QUESTIONS } from '../data/trivia-questions.js';
 
 /**
  * Day4Scene — Cutscene: bus ride from Kiryat Shmona to Jerusalem.
@@ -527,7 +528,50 @@ export class Day4Scene extends Phaser.Scene {
     if (this._sceneEnded) return;
     this._sceneEnded = true;
     this._stopMusic();
-    this.events.emit("complete");
+    this.cameras.main.fade(800, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.runTriviaQuestion(3);
+    });
+  }
+
+  runTriviaQuestion(index) {
+    const qData = TRIVIA_QUESTIONS[index];
+
+    const onTriviaComplete = (event) => {
+      if (event.detail.questionIndex === index) {
+        window.removeEventListener('trivia-complete', onTriviaComplete);
+        this.events.off('shutdown', cleanupListener);
+        
+        this.time.delayedCall(1000, () => {
+          this.events.emit('complete');
+        });
+      }
+    };
+
+    const cleanupListener = () => {
+      window.removeEventListener('trivia-complete', onTriviaComplete);
+    };
+
+    window.addEventListener('trivia-complete', onTriviaComplete);
+    this.events.once('shutdown', cleanupListener);
+
+    let portraitBase64 = null;
+    try {
+      portraitBase64 = this.textures.getBase64('solberg_portrait');
+    } catch (err) {
+      console.warn('Could not extract solberg_portrait base64:', err);
+    }
+
+    window.dispatchEvent(new CustomEvent('show-trivia', {
+      detail: {
+        questionIndex: index,
+        questionText: qData[0],
+        options: qData[1],
+        correctIndex: qData[2],
+        portraitDataUrl: portraitBase64,
+        totalQuestions: 5
+      }
+    }));
   }
 
   // ─────────────────────────────────────────────────────────────

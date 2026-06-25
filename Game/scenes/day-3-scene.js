@@ -5,6 +5,7 @@ import { NPC } from '../entities/npc.js';
 import { DialogSystem } from '../systems/dialog-system.js';
 import { DroneManager } from '../systems/drone-manager.js';
 import { DAY_3_INTRO_DIALOG, DAY_3_VICTORY_DIALOG } from '../data/dialog-data.js';
+import { TRIVIA_QUESTIONS } from '../data/trivia-questions.js';
 
 // How many character-widths wide the world is
 const WORLD_CHARS_WIDE = 120;
@@ -693,9 +694,50 @@ export class Day3Scene extends Phaser.Scene {
       duration: 800,
       onComplete: () => {
         this.input.once('pointerdown', () => {
-          this.events.emit('complete');
+          this.runTriviaQuestion(2);
         });
       }
     });
+  }
+
+  runTriviaQuestion(index) {
+    const qData = TRIVIA_QUESTIONS[index];
+    this._updateHUD(`Trivia Question ${index + 1}...`);
+
+    const onTriviaComplete = (event) => {
+      if (event.detail.questionIndex === index) {
+        window.removeEventListener('trivia-complete', onTriviaComplete);
+        this.events.off('shutdown', cleanupListener);
+        
+        this.time.delayedCall(1000, () => {
+          this.events.emit('complete');
+        });
+      }
+    };
+
+    const cleanupListener = () => {
+      window.removeEventListener('trivia-complete', onTriviaComplete);
+    };
+
+    window.addEventListener('trivia-complete', onTriviaComplete);
+    this.events.once('shutdown', cleanupListener);
+
+    let portraitBase64 = null;
+    try {
+      portraitBase64 = this.textures.getBase64('solberg_portrait');
+    } catch (err) {
+      console.warn('Could not extract solberg_portrait base64:', err);
+    }
+
+    window.dispatchEvent(new CustomEvent('show-trivia', {
+      detail: {
+        questionIndex: index,
+        questionText: qData[0],
+        options: qData[1],
+        correctIndex: qData[2],
+        portraitDataUrl: portraitBase64,
+        totalQuestions: 5
+      }
+    }));
   }
 }
