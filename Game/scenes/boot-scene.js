@@ -28,7 +28,13 @@ export class BootScene extends Phaser.Scene {
     this._generateAsphaltTextures();
     this._generateSolbergPortrait();
 
-    this.events.emit('complete');
+    if (window.gameStarted) {
+      this.events.emit('complete');
+    } else {
+      window.addEventListener('start-game', () => {
+        this.events.emit('complete');
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
